@@ -1,104 +1,58 @@
-import { useRef, useState } from 'react';
-import { IRefPhaserGame, PhaserGame } from './PhaserGame';
-import { MainMenu } from './game/scenes/MainMenu';
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import type { Game } from 'phaser';
+import StartGame, { switchView } from './game/main';
+import { store } from './game/store';
+import { TitleScreen } from './ui/Title';
+import { Hud } from './ui/Hud';
+import { useStore } from './ui/useStore';
 
-function App()
-{
-    // The sprite can only be moved in the MainMenu Scene
-    const [canMoveSprite, setCanMoveSprite] = useState(true);
+let phaserGame: Game | null = null;
 
-    //  References to the PhaserGame component (game and scene are exposed)
-    const phaserRef = useRef<IRefPhaserGame | null>(null);
-    const [spritePosition, setSpritePosition] = useState({ x: 0, y: 0 });
+// load existing save once at startup
+store.load();
 
-    const changeScene = () => {
+export default function App() {
+    const st = useStore();
+    const gameRef = useRef<Game | null>(null);
+    const inGame = !!st.state;
+    const view = st.ui.view;
 
-        if(phaserRef.current)
-        {     
-            const scene = phaserRef.current.scene as MainMenu;
-            
-            if (scene)
-            {
-                scene.changeScene();
-            }
-        }
-    }
+    // One Phaser game for the app's lifetime (avoid React StrictMode double-creation).
+    useLayoutEffect(() => {
+        phaserGame ??= StartGame('game-container');
+        gameRef.current = phaserGame;
+    }, []);
 
-    const moveSprite = () => {
+    useEffect(() => {
+        if (gameRef.current) switchView(gameRef.current, inGame ? view : null);
+    }, [inGame, view]);
 
-        if(phaserRef.current)
-        {
+    // economy tick
+    useEffect(() => {
+        let last = performance.now();
+        const id = setInterval(() => {
+            const now = performance.now();
+            store.tick((now - last) / 1000);
+            last = now;
+        }, 250);
+        const onUnload = () => store.save();
+        window.addEventListener('beforeunload', onUnload);
+        return () => { clearInterval(id); window.removeEventListener('beforeunload', onUnload); };
+    }, []);
 
-            const scene = phaserRef.current.scene as MainMenu;
-
-            if (scene && scene.scene.key === 'MainMenu')
-            {
-                // Get the update logo position
-                scene.moveLogo(({ x, y }) => {
-
-                    setSpritePosition({ x, y });
-
-                });
-            }
-        }
-
-    }
-
-    const addSprite = () => {
-
-        if (phaserRef.current)
-        {
-            const scene = phaserRef.current.scene;
-
-            if (scene)
-            {
-                // Add more stars
-                const x = Phaser.Math.Between(64, scene.scale.width - 64);
-                const y = Phaser.Math.Between(64, scene.scale.height - 64);
-    
-                //  `add.sprite` is a Phaser GameObjectFactory method and it returns a Sprite Game Object instance
-                const star = scene.add.sprite(x, y, 'star');
-    
-                //  ... which you can then act upon. Here we create a Phaser Tween to fade the star sprite in and out.
-                //  You could, of course, do this from within the Phaser Scene code, but this is just an example
-                //  showing that Phaser objects and systems can be acted upon from outside of Phaser itself.
-                scene.add.tween({
-                    targets: star,
-                    duration: 500 + Math.random() * 1000,
-                    alpha: 0,
-                    yoyo: true,
-                    repeat: -1
-                });
-            }
-        }
-    }
-
-    // Event emitted from the PhaserGame component
-    const currentScene = (scene: Phaser.Scene) => {
-
-        setCanMoveSprite(scene.scene.key !== 'MainMenu');
-        
-    }
+    // keyboard shortcuts
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') store.setUi({ buildKind: null, selected: null, selectedCamp: null });
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, []);
 
     return (
         <div id="app">
-            <PhaserGame ref={phaserRef} currentActiveScene={currentScene} />
-            <div>
-                <div>
-                    <button className="button" onClick={changeScene}>Change Scene</button>
-                </div>
-                <div>
-                    <button disabled={canMoveSprite} className="button" onClick={moveSprite}>Toggle Movement</button>
-                </div>
-                <div className="spritePosition">Sprite Position:
-                    <pre>{`{\n  x: ${spritePosition.x}\n  y: ${spritePosition.y}\n}`}</pre>
-                </div>
-                <div>
-                    <button className="button" onClick={addSprite}>Add New Sprite</button>
-                </div>
-            </div>
+            <div id="game-container" />
+            {inGame ? <Hud /> : <TitleScreen />}
         </div>
-    )
+    );
 }
-
-export default App
