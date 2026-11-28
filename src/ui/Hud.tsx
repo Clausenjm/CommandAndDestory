@@ -115,6 +115,7 @@ function BuildBar() {
 const ICON_IMAGES: Partial<Record<BuildingKind, string>> = {
     extractor: 'assets/icons/extractor.png',
     vault: 'assets/icons/vault.png',
+    hub: 'assets/icons/hub.png',
 };
 
 function BuildingIcon({ kind }: { kind: BuildingKind }) {

@@ -53,7 +53,7 @@ export interface BuildingDef {
 
 export const BUILDINGS: Record<BuildingKind, BuildingDef> = {
     hub: {
-        kind: 'hub', name: 'Command Hub', growth: 1.7, color: 0x8fa3b8, requiresHub: 99, unique: true,
+        kind: 'hub', name: 'Construction Hub', growth: 1.7, color: 0x8fa3b8, requiresHub: 99, unique: true,
         desc: 'Heart of your base. Raises max building level, build slots and storage.',
         baseCost: { verdite: 250, power: 150 },
     },

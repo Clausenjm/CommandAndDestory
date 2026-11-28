@@ -56,7 +56,7 @@ export const OBJECTIVES: Objective[] = [
     { text: 'Build Barracks', reward: { azurite: 200, power: 100 }, done: s => count(s, 'barracks') >= 1 },
     { text: 'Train 4 Troopers', reward: { azurite: 150 }, done: s => s.units.filter(u => u.kind === 'trooper').length >= 4 },
     { text: 'Open the World map and defeat a Raider Camp', reward: { verdite: 300, credits: 200 }, done: s => s.stats.victories >= 1 },
-    { text: 'Upgrade your Command Hub to level 2', reward: { verdite: 400, power: 200 }, done: s => hubLevel(s) >= 2 },
+    { text: 'Upgrade your Construction Hub to level 2', reward: { verdite: 400, power: 200 }, done: s => hubLevel(s) >= 2 },
     { text: 'Build a Vehicle Bay and train a Rover', reward: { azurite: 300 }, done: s => s.units.some(u => u.kind === 'rover') },
     { text: 'Defeat 5 raider bases', reward: { credits: 800 }, done: s => s.stats.victories >= 5 },
 ];
@@ -144,7 +144,7 @@ export function unitPower(s: GameState, kind: UnitKind) {
     return Math.pow(1.15, Math.max(0, lvl - 1));
 }
 
-/** Buildings may be upgraded up to 2 levels above the Command Hub. */
+/** Buildings may be upgraded up to 2 levels above the Construction Hub. */
 export function maxLevelFor(s: GameState, kind: BuildingKind) {
     return kind === 'hub' ? HUB_MAX_LEVEL : hubLevel(s) + 2;
 }
@@ -308,8 +308,8 @@ class Store {
     }
     buildLockReason(kind: BuildingKind): string | null {
         const s = this.state!; const e = economy(s);
-        if (hubLevel(s) < BUILDINGS[kind].requiresHub) return `Requires Command Hub level ${BUILDINGS[kind].requiresHub}`;
-        if (e.slotsUsed >= e.slotsMax) return 'No free build slots – upgrade the Command Hub';
+        if (hubLevel(s) < BUILDINGS[kind].requiresHub) return `Requires Construction Hub level ${BUILDINGS[kind].requiresHub}`;
+        if (e.slotsUsed >= e.slotsMax) return 'No free build slots – upgrade the Construction Hub';
         if (!this.canAfford(buildingCost(kind, 1))) return 'Not enough resources';
         return null;
     }
@@ -328,7 +328,7 @@ class Store {
         const s = this.state!; const b = s.grid[r][c].b;
         if (!b) return 'Nothing here';
         const max = maxLevelFor(s, b.kind);
-        if (b.level >= max) return b.kind === 'hub' ? 'Max level' : `Upgrade the Command Hub first (max Lv ${max})`;
+        if (b.level >= max) return b.kind === 'hub' ? 'Max level' : `Upgrade the Construction Hub first (max Lv ${max})`;
         if (!this.canAfford(buildingCost(b.kind, b.level + 1))) return 'Not enough resources';
         return null;
     }

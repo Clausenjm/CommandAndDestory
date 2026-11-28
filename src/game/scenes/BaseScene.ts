@@ -1,10 +1,14 @@
-import { Display, GameObjects, Scene } from 'phaser';
+import { Display, GameObjects, Scene, TintModes } from 'phaser';
 import { FACTIONS, GRID_COLS, GRID_ROWS } from '../data';
 import { store } from '../store';
 import { drawBuilding, drawCrystals } from '../draw';
 import { BASE_BG, artFor, dirIndex, fitSprite, makeSprite, setFacing } from '../sprites';
 
 /** Harvester loop: drive a quarter of the way round the pile, then stop and work it. */
+/** Outline: 8 silhouette copies of a sprite pushed out this many px in each direction. */
+const OUTLINE_PX = 2.5;
+const OUTLINE_DIRS = Array.from({ length: 8 }, (_, i) => [Math.cos(i * Math.PI / 4), Math.sin(i * Math.PI / 4)]);
+
 const DRIVE_S = 2.6, HARVEST_S = 1.8, TURN_S = 0.09, DROID = 0.72; // droid size, fraction of a tile
 
 export const HUD = { top: 64, bottom: 150, right: 320, left: 16 };
@@ -23,6 +27,7 @@ export class BaseScene extends Scene {
     private drawnLayout = -1;
     private drawnUi = '';
     private t = 0;
+    private outlines: Record<'sel' | 'hover', GameObjects.Sprite[]> = { sel: [], hover: [] };
     private harvesters = new Map<string, { spr: GameObjects.Sprite | null; dir: number; turnT: number; seed: number }>();
 
     constructor() { super('Base'); }
@@ -60,6 +65,9 @@ export class BaseScene extends Scene {
             this.sprites.clear();
             this.harvesters.forEach(h => h.spr?.destroy());
             this.harvesters.clear();
+            this.outlines.sel.forEach(o => o.destroy());
+            this.outlines.hover.forEach(o => o.destroy());
+            this.outlines = { sel: [], hover: [] };
             this.scale.off('resize', this.onResize, this);
             store.setUi({ hover: null });
         });
@@ -221,8 +229,10 @@ export class BaseScene extends Scene {
         if (ui.hover) {
             const x = ox + ui.hover.c * ts, y = oy + ui.hover.r * ts;
             const bad = ui.buildKind && store.buildBlockReason(ui.buildKind, ui.hover.r, ui.hover.c);
-            g.lineStyle(2, ui.buildKind ? (bad ? 0xff5050 : 0x5ee06a) : 0xffffff, 0.9);
-            g.strokeRect(x + 1, y + 1, ts - 2, ts - 2);
+            if (ui.buildKind || !this.spriteAt(ui.hover.r, ui.hover.c)) { // sprites get an outline instead (drawFx)
+                g.lineStyle(2, ui.buildKind ? (bad ? 0xff5050 : 0x5ee06a) : 0xffffff, ui.buildKind ? 0.9 : 0.35);
+                g.strokeRect(x + 1, y + 1, ts - 2, ts - 2);
+            }
             if (ui.buildKind && !bad && !this.syncSprite('ghost', `building-${ui.buildKind}`, x + ts / 2, y + ts / 2, ts, 3, 0.6)) {
                 drawBuilding(g, ui.buildKind, x, y, ts, accent);
             }
@@ -252,22 +262,46 @@ export class BaseScene extends Scene {
         return true;
     }
 
+    /** The sprite that represents tile (r,c): its building, or the crystals under an Extractor. */
+    private spriteAt(r: number, c: number) {
+        const t = store.state?.grid[r]?.[c];
+        if (!t) return null;
+        if (t.b && !(t.b.kind === 'extractor' && t.field)) return this.sprites.get(`b${r},${c}`) ?? null;
+        if (t.field) return this.sprites.get(`f${r},${c}`) ?? null;
+        return null;
+    }
+
+    /** Draw (or hide) a solid-colour outline that follows `target`'s shape. */
+    private syncOutline(which: 'sel' | 'hover', target: GameObjects.Sprite | null, color: number, alpha: number) {
+        const pool = this.outlines[which];
+        if (!target) { pool.forEach(o => o.setVisible(false)); return; }
+        OUTLINE_DIRS.forEach(([dx, dy], i) => {
+            let o = pool[i];
+            if (!o) {
+                o = this.add.sprite(0, 0, target.texture.key, target.frame.name).setTintMode(TintModes.FILL);
+                pool[i] = o;
+            }
+            if (o.texture.key !== target.texture.key || o.frame.name !== target.frame.name) o.setTexture(target.texture.key, target.frame.name);
+            o.setOrigin(target.originX, target.originY).setScale(target.scaleX, target.scaleY)
+                .setRotation(target.rotation).setFlip(target.flipX, target.flipY)
+                .setPosition(target.x + dx * OUTLINE_PX, target.y + dy * OUTLINE_PX)
+                .setDepth(target.depth - 0.01).setTint(color).setAlpha(alpha).setVisible(true);
+        });
+    }
+
     private drawFx() {
         const ui = store.ui, s = store.state;
         this.fx.clear();
-        if (!s || !ui.selected) return;
+        const hov = ui.hover && !ui.buildKind && !(ui.selected && ui.selected.r === ui.hover.r && ui.selected.c === ui.hover.c)
+            ? this.spriteAt(ui.hover.r, ui.hover.c) : null;
+        this.syncOutline('hover', hov, 0xffffff, 0.45);
+        const selSprite = s && ui.selected ? this.spriteAt(ui.selected.r, ui.selected.c) : null;
+        this.syncOutline('sel', selSprite, 0xffffff, 0.65 + Math.sin(this.t * 5) * 0.3);
+        if (!s || !ui.selected || selSprite) return;
+        // no art for this building: fall back to the square
         const { ts, ox, oy } = this;
         const x = ox + ui.selected.c * ts, y = oy + ui.selected.r * ts;
-        const a = 0.55 + Math.sin(this.t * 5) * 0.35;
-        this.fx.lineStyle(3, 0xffffff, a);
+        this.fx.lineStyle(3, 0xffffff, 0.55 + Math.sin(this.t * 5) * 0.35);
         this.fx.strokeRoundedRect(x + 2, y + 2, ts - 4, ts - 4, 8);
-        // highlight adjacency
-        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-            if (!dr && !dc) continue;
-            const r = ui.selected.r + dr, c = ui.selected.c + dc;
-            if (r < 0 || c < 0 || r >= GRID_ROWS || c >= GRID_COLS) continue;
-            this.fx.fillStyle(0xffffff, 0.05);
-            this.fx.fillRect(ox + c * ts, oy + r * ts, ts, ts);
-        }
     }
 }
