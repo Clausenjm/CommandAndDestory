@@ -1,5 +1,5 @@
 import { Scene } from 'phaser';
-import { MANIFEST_KEY, Manifest, SPRITE_DIR, registerArt } from '../sprites';
+import { BASE_BG, MANIFEST_KEY, Manifest, SPRITE_DIR, registerArt } from '../sprites';
 
 /**
  * First scene: loads the optional sprite manifest and every sheet it lists, registers
@@ -20,6 +20,7 @@ export class Boot extends Scene {
         });
         this.load.on('loaderror', (file: { key: string; src: string }) => console.warn(`[sprites] could not load ${file.src}`));
         this.load.json(MANIFEST_KEY, 'manifest.json');
+        this.load.image(BASE_BG, '../background/Barren Sci-Fi Desert Terrain Map.png');
     }
 
     create() {

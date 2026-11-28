@@ -114,6 +114,7 @@ function BuildBar() {
 /** Build-bar pictures; buildings not listed here use a text glyph. */
 const ICON_IMAGES: Partial<Record<BuildingKind, string>> = {
     extractor: 'assets/icons/extractor.png',
+    vault: 'assets/icons/vault.png',
 };
 
 function BuildingIcon({ kind }: { kind: BuildingKind }) {

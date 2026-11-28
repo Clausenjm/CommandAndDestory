@@ -39,6 +39,8 @@ export interface Manifest { sheets: SheetDef[]; art: Record<string, ArtDef>; }
 
 export const MANIFEST_KEY = 'sprite-manifest';
 export const SPRITE_DIR = 'assets/sprites/';
+/** Terrain picture under the base grid (assets/background/). Without it the base draws plain tiles. */
+export const BASE_BG = 'base-bg';
 
 let art: Record<string, ArtDef> = {};
 

@@ -2,7 +2,7 @@ import { Display, GameObjects, Scene } from 'phaser';
 import { FACTIONS, GRID_COLS, GRID_ROWS } from '../data';
 import { store } from '../store';
 import { drawBuilding, drawCrystals } from '../draw';
-import { artFor, dirIndex, fitSprite, makeSprite, setFacing } from '../sprites';
+import { BASE_BG, artFor, dirIndex, fitSprite, makeSprite, setFacing } from '../sprites';
 
 /** Harvester loop: drive a quarter of the way round the pile, then stop and work it. */
 const DRIVE_S = 2.6, HARVEST_S = 1.8, TURN_S = 0.09, DROID = 0.72; // droid size, fraction of a tile
@@ -10,6 +10,8 @@ const DRIVE_S = 2.6, HARVEST_S = 1.8, TURN_S = 0.09, DROID = 0.72; // droid size
 export const HUD = { top: 64, bottom: 150, right: 320, left: 16 };
 
 export class BaseScene extends Scene {
+    private back!: GameObjects.Graphics; // backdrop (below the terrain picture)
+    private bg: GameObjects.Image | null = null;
     private g!: GameObjects.Graphics;
     private fx!: GameObjects.Graphics;
     private labels: GameObjects.Text[] = [];
@@ -26,6 +28,8 @@ export class BaseScene extends Scene {
     constructor() { super('Base'); }
 
     create() {
+        this.back = this.add.graphics().setDepth(-2);
+        this.bg = this.textures.exists(BASE_BG) ? this.add.image(0, 0, BASE_BG).setDepth(-1) : null;
         this.g = this.add.graphics();
         this.fx = this.add.graphics().setDepth(4);
         this.drawnLayout = -1;
@@ -165,17 +169,30 @@ export class BaseScene extends Scene {
         this.touched.clear();
 
         // backdrop: wasteland
-        g.fillStyle(0x15181c, 1); g.fillRect(0, 0, W, H);
-        // base plate
+        const back = this.back;
+        back.clear();
+        back.fillStyle(0x15181c, 1); back.fillRect(0, 0, W, H);
         const bw = ts * GRID_COLS, bh = ts * GRID_ROWS;
-        g.fillStyle(0x000000, 0.5); g.fillRoundedRect(ox - 14, oy - 14, bw + 28, bh + 28, 12);
-        g.lineStyle(3, accent, 0.6); g.strokeRoundedRect(ox - 14, oy - 14, bw + 28, bh + 28, 12);
-        for (let r = 0; r < GRID_ROWS; r++) for (let c = 0; c < GRID_COLS; c++) {
-            const x = ox + c * ts, y = oy + r * ts;
-            const shade = ((r * 7 + c * 13) % 5) * 3;
-            g.fillStyle(Display.Color.GetColor(58 + shade, 48 + shade, 38 + shade), 1);
-            g.fillRect(x, y, ts, ts);
-            g.lineStyle(1, 0x000000, 0.25); g.strokeRect(x, y, ts, ts);
+        if (this.bg) {
+            // terrain picture, aspect kept, covering the grid with a margin so its border frames the base
+            const tex = this.bg.texture.getSourceImage() as { width: number; height: number };
+            const k = Math.max((bw + ts * 1.2) / tex.width, (bh + ts * 1.2) / tex.height);
+            this.bg.setScale(k).setPosition(ox + bw / 2, oy + bh / 2);
+            if (ui.buildKind) { // faint grid only while placing a building
+                g.lineStyle(1, 0xffffff, 0.12);
+                for (let c = 0; c <= GRID_COLS; c++) g.lineBetween(ox + c * ts, oy, ox + c * ts, oy + bh);
+                for (let r = 0; r <= GRID_ROWS; r++) g.lineBetween(ox, oy + r * ts, ox + bw, oy + r * ts);
+            }
+        } else {
+            back.fillStyle(0x000000, 0.5); back.fillRoundedRect(ox - 14, oy - 14, bw + 28, bh + 28, 12);
+            back.lineStyle(3, accent, 0.6); back.strokeRoundedRect(ox - 14, oy - 14, bw + 28, bh + 28, 12);
+            for (let r = 0; r < GRID_ROWS; r++) for (let c = 0; c < GRID_COLS; c++) {
+                const x = ox + c * ts, y = oy + r * ts;
+                const shade = ((r * 7 + c * 13) % 5) * 3;
+                back.fillStyle(Display.Color.GetColor(58 + shade, 48 + shade, 38 + shade), 1);
+                back.fillRect(x, y, ts, ts);
+                back.lineStyle(1, 0x000000, 0.25); back.strokeRect(x, y, ts, ts);
+            }
         }
         // tiles
         for (let r = 0; r < GRID_ROWS; r++) for (let c = 0; c < GRID_COLS; c++) {

@@ -3,10 +3,14 @@
     { "key": "ex-generator", "type": "spritesheet", "image": "examples/generator.png", "frameWidth": 128, "frameHeight": 128 },
     { "key": "ex-rover", "type": "spritesheet", "image": "examples/rover.png", "frameWidth": 96, "frameHeight": 96 },
     { "key": "azurite-field", "type": "image", "image": "fields/azurite.png" },
+    { "key": "verdite-field", "type": "image", "image": "fields/verdite-256.png" },
+    { "key": "vault", "type": "image", "image": "buildings/crystalVault-256.png" },
     { "key": "harvester", "type": "spritesheet", "image": "units/harvester.png", "frameWidth": 256, "frameHeight": 256 }
   ],
   "art": {
     "field-azurite": { "sheet": "azurite-field", "scale": 1.05 },
+    "field-verdite": { "sheet": "verdite-field", "scale": 1.05 },
+    "building-vault": { "sheet": "vault", "scale": 1.15, "offsetY": -0.04 },
     "drone-harvester": {
       "sheet": "harvester",
       "frame": 0,
