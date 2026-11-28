@@ -3,7 +3,7 @@ import { FACTIONS } from '../data';
 import { ENEMY_ROWS, FIELD_H, FIELD_W } from '../battle';
 import { store } from '../store';
 import { drawUnit } from '../draw';
-import { artFor, fitSprite, makeSprite, playAnim } from '../sprites';
+import { artFor, dirIndex, fitSprite, makeSprite, playAnim, setFacing } from '../sprites';
 
 export class BattleScene extends Scene {
     private g!: GameObjects.Graphics;
@@ -132,7 +132,13 @@ export class BattleScene extends Scene {
         fitSprite(spr, ts);
         spr.setPosition(x, y + (spr.getData('offsetY') as number)).setDepth(2 + y / 10000);
         const moving = Math.abs(dx) + Math.abs(dy) > 0.01;
-        if (def.rotate) {
+        if (def.directions) {
+            if (aim) setFacing(spr, dirIndex(aim.x - x, aim.y - y, def.directions.length));
+            else if (moving) setFacing(spr, dirIndex(dx, dy, def.directions.length));
+            else if (spr.getData('faced') !== true) setFacing(spr, side === 'att' ? 4 : 0);
+            spr.setData('faced', true);
+            return;
+        } else if (def.rotate) {
             if (aim) spr.setRotation(Math.atan2(aim.y - y, aim.x - x) + Math.PI / 2);
             else if (moving) spr.setRotation(Math.atan2(dy, dx) + Math.PI / 2);
         } else if (side === 'def' && cat !== 'struct') {

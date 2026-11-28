@@ -30,6 +30,9 @@ export interface ArtDef {
     origin?: [number, number];
     offsetY?: number; // fraction of a tile, e.g. -0.1 to lift tall buildings
     rotate?: boolean; // units: turn toward where they move / shoot (art must face up)
+    /** Pre-rendered facings instead of rotating: 8 frames, first facing the camera (down),
+     *  then turning counter-clockwise (down-right, right, up-right, up, up-left, left, down-left). */
+    directions?: (number | string)[];
 }
 
 export interface Manifest { sheets: SheetDef[]; art: Record<string, ArtDef>; }
@@ -88,6 +91,22 @@ export function fitSprite(spr: GameObjects.Sprite, size: number) {
     const fw = spr.frame.realWidth || spr.width, fh = spr.frame.realHeight || spr.height;
     spr.setScale((size / Math.max(fw, fh)) * (def.scale ?? 1));
     spr.setData('offsetY', (def.offsetY ?? 0) * size);
+}
+
+/** Index into `directions` (0 = facing down, counter-clockwise) for a screen-space heading. */
+export function dirIndex(dx: number, dy: number, count = 8) {
+    const a = Math.atan2(dy, dx); // screen coords: down = +PI/2
+    const step = (Math.PI * 2) / count;
+    return (((Math.round((Math.PI / 2 - a) / step)) % count) + count) % count;
+}
+
+/** Show the pre-rendered facing for direction index `i`. Returns false if the art has no directions. */
+export function setFacing(spr: GameObjects.Sprite, i: number) {
+    const dirs = art[spr.getData('art') as string]?.directions;
+    if (!dirs?.length) return false;
+    const f = dirs[((i % dirs.length) + dirs.length) % dirs.length];
+    if (spr.frame.name !== String(f)) spr.setFrame(f);
+    return true;
 }
 
 /** Play an animation if this art defines it. Returns false if it doesn't. */

@@ -1,9 +1,17 @@
 {
   "sheets": [
     { "key": "ex-generator", "type": "spritesheet", "image": "examples/generator.png", "frameWidth": 128, "frameHeight": 128 },
-    { "key": "ex-rover", "type": "spritesheet", "image": "examples/rover.png", "frameWidth": 96, "frameHeight": 96 }
+    { "key": "ex-rover", "type": "spritesheet", "image": "examples/rover.png", "frameWidth": 96, "frameHeight": 96 },
+    { "key": "azurite-field", "type": "image", "image": "fields/azurite.png" },
+    { "key": "harvester", "type": "spritesheet", "image": "units/harvester.png", "frameWidth": 256, "frameHeight": 256 }
   ],
   "art": {
+    "field-azurite": { "sheet": "azurite-field", "scale": 1.05 },
+    "drone-harvester": {
+      "sheet": "harvester",
+      "frame": 0,
+      "directions": [0, 1, 2, 3, 4, 5, 6, 7]
+    },
     "building-generator": {
       "sheet": "ex-generator",
       "anims": { "idle": { "frames": [0, 1, 2, 3, 4, 5, 6, 7], "frameRate": 12 } }

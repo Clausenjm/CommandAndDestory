@@ -111,11 +111,17 @@ function BuildBar() {
     );
 }
 
+/** Build-bar pictures; buildings not listed here use a text glyph. */
+const ICON_IMAGES: Partial<Record<BuildingKind, string>> = {
+    extractor: 'assets/icons/extractor.png',
+};
+
 function BuildingIcon({ kind }: { kind: BuildingKind }) {
     const c = '#' + BUILDINGS[kind].color.toString(16).padStart(6, '0');
     const glyph: Record<BuildingKind, string> = {
         hub: '✪', extractor: '⛏', generator: 'ϟ', refinery: '¢', vault: '⬢', battery: '▮▮', barracks: '⚔', vehiclebay: '⛟',
     };
+    if (kind in ICON_IMAGES) return <img className="bc-icon bc-icon-img" src={ICON_IMAGES[kind]} alt="" draggable={false} />;
     return <div className="bc-icon" style={{ color: c }}>{glyph[kind]}</div>;
 }
 

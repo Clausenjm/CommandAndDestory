@@ -31,6 +31,7 @@ Under `"art"`, use one of these keys:
 | Crystal fields | `field-verdite`, `field-azurite` |
 | Your units (battle) | `unit-trooper`, `unit-lancer`, `unit-rover`, `unit-breaker` |
 | Raider objects (battle) | `enemy-core`, `enemy-depot`, `enemy-shack`, `enemy-gunnest`, `enemy-cannon`, `enemy-militia`, `enemy-buggy` |
+| Base harvester droid (drives around each Extractor) | `drone-harvester` |
 | World map | `world-home`, `world-camp` (all camps), or per tier `world-outpost`, `world-fortress` |
 
 ```jsonc
@@ -48,6 +49,20 @@ Under `"art"`, use one of these keys:
   }
 }
 ```
+
+### Pre-rendered directions (instead of `rotate`)
+
+For art rendered from 8 angles, list the frames in `"directions"`: the first faces the camera (down),
+then each next one is turned counter-clockwise (down-right, right, up-right, up, up-left, left, down-left).
+The game shows whichever frame matches the way the object is heading.
+
+```jsonc
+"drone-harvester": { "sheet": "harvester", "frame": 0, "directions": [0, 1, 2, 3, 4, 5, 6, 7] }
+```
+
+To turn a folder of renders into one sheet (same crop for every frame, so nothing jitters):
+`python tools/pack_frames.py SpriteSheets client/public/assets/sprites/units/harvester.png --match "000*.png" --size 256 --cols 4 --brighten 1.35`
+(run from the project root; frames are taken in filename order, `--match` picks which files).
 
 For atlases, name frames instead of numbering them:
 `"idle": { "prefix": "hub_idle_", "start": 0, "end": 7, "zeroPad": 2, "frameRate": 10 }`

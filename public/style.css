@@ -120,6 +120,7 @@ body {
 .build-card.locked { opacity: 0.6; }
 .bc-name { font-size: 12.5px; font-weight: 600; }
 .bc-icon { font-size: 26px; line-height: 1; }
+.bc-icon-img { width: 34px; height: 34px; object-fit: contain; margin: -4px auto; display: block; }
 .bc-lock { font-size: 11.5px; color: var(--muted); }
 .build-card .cost { gap: 5px; font-size: 11.5px; justify-content: center; }
 
